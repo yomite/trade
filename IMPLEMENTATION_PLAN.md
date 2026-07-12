@@ -62,7 +62,7 @@ Re-verified at each gate; this snapshot drove the Phase 0 checklist.
 **Status:** ✅ Done (2026-07-12)
 **Gate record:** Operator installed Python 3.11, PostgreSQL 16 + TimescaleDB, ta-lib, and `gh` — all verified from the machine. DoD met: fresh clone from GitHub → `make install` → `make test` = **24 passed**; `mypy --strict` and `ruff` clean; bot runs in paper mode emitting structured JSON logs. Committed and pushed to github.com/yomite/trade.
 
-> **CI note:** the workflow file (`.github/workflows/ci.yml`) is valid, but GitHub returns `startup_failure` (0 jobs, `path: BuildFailed`) because **`yomite/trade` is a private repo** and Actions won't start without available Actions minutes / billing. This is an operator-side GitHub setting. To activate CI, either (a) make the repo public — public repos get unlimited free Actions, and no secrets are committed (they live only in `.env`, gitignored); or (b) ensure the account has Actions minutes / a spending limit at github.com/settings/billing. Phase 0's DoD is the **local** `make test`, which passes, so this does not block progress.
+> **CI note (resolved 2026-07-12):** CI is **green** — all steps pass (checkout, Python 3.11, install, ruff, mypy --strict, tests). The earlier failures were an account-level GitHub billing lock ("The job was not started because your account is locked due to a billing issue"), confirmed via the run's check-run annotation and ruled in after eliminating the workflow file (valid), repo visibility (made public), and email (verified). The operator updated billing and CI now runs on every push. Repo is public; a Netlify app is also installed (unrelated to CI).
 
 **Claude builds:** full repo tree per §9; `git init` + initial commit; `pyproject.toml` (all §6.2 deps, ruff + mypy --strict config, Python pinned 3.11); `src/constants.py` encoding every §4 HARD CONSTRAINT; `config/{base,paper,live,backtest}.yaml` per §12; `.env.example` documenting every env var; `Makefile` (install/test/lint/run-paper/backtest); pre-commit hooks; GitHub Actions CI (venv-based, no containers); `README.md`; `docs/dev-setup-ubuntu.md`.
 
@@ -84,6 +84,17 @@ Re-verified at each gate; this snapshot drove the Phase 0 checklist.
 
 **Status:** 🔨 In progress (gate passed 2026-07-12)
 **Gate record:** Operator set `DATABASE_URL` in `.env`. Verified from the machine (secret never printed): connected to `tradingbot_dev` as `tradingbot`, PostgreSQL 16.14, TimescaleDB extension **2.28.2** present. Bybit reachable via `api.bytick.com` (see below). Cleared to implement.
+
+**Progress (2026-07-12):**
+- ✅ Schema (`schema.sql`) applied; storage writers (`timescale.py`) integration-tested (Decimal-exact, idempotent, dedup).
+- ✅ REST loader (`bybit_rest.py`) with `bytick` host fallback + resumable deep/recent backfill (`backfill.py`); live-verified.
+- ✅ WS feed (`bybit_ws.py`): confirmed 1m bars + trades + order book; 80s live capture wrote 182 trades / 75 books / closed bars.
+- ✅ Validation (`validation.py`) + deterministic feature transforms (`features/*`, versioned `v1`, 31 features); determinism + correctness unit-tested. 51 tests green, mypy/ruff clean.
+- ✅ Cross-asset (`crossasset.py`, yfinance) + macro stub (`macro.py`).
+- 🔄 **5-year 1m backfill running** (BTC+ETH). Bybit spot data begins 2021-07-13 (listing), so "5y" is ~4y of available history. DoD gap-rate check runs at completion.
+- ⏳ **Pending — operator/long-running:** 24h live-feed soak (`make live-feed`) to confirm no missed candles. Run when convenient; leave the machine on.
+
+**DoD status:** feature-determinism ✅ done; 5y-load 🔄 in progress; 24h-soak ⏳ pending operator.
 
 **Claude builds:** `schema.sql` (§11) + `timescale.py` writers; `bybit_rest.py` backfill of 5 years of 1m candles for BTC/USDT + ETH/USDT; `bybit_ws.py` live trades/candles/order book; `validation.py` (gaps, late data, duplicates); deterministic feature transforms (`features/*` per §15.1 incl. cross-asset via yfinance, macro stubbed); `scripts/load_history.py`.
 
