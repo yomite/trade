@@ -91,10 +91,13 @@ Re-verified at each gate; this snapshot drove the Phase 0 checklist.
 - ✅ WS feed (`bybit_ws.py`): confirmed 1m bars + trades + order book; 80s live capture wrote 182 trades / 75 books / closed bars.
 - ✅ Validation (`validation.py`) + deterministic feature transforms (`features/*`, versioned `v1`, 31 features); determinism + correctness unit-tested. 51 tests green, mypy/ruff clean.
 - ✅ Cross-asset (`crossasset.py`, yfinance) + macro stub (`macro.py`).
-- 🔄 **5-year 1m backfill running** (BTC+ETH). Bybit spot data begins 2021-07-13 (listing), so "5y" is ~4y of available history. DoD gap-rate check runs at completion.
-- ⏳ **Pending — operator/long-running:** 24h live-feed soak (`make live-feed`) to confirm no missed candles. Run when convenient; leave the machine on.
+- ✅ **Historical backfill complete**: BTC/USDT + ETH/USDT, **2,628,000 bars each (5,256,000 total)**, 2021-07-13 → 2026-07-12, **0.0000% gap rate** (DoD <0.1% PASS). Bybit spot lists both from 2021-07, so this is the full available history.
+- ✅ **Full-history features materialized**: 5,256,000 rows (2.628M/symbol), 31 features each, feature_set `v1`, 2021-07→2026-07. Features hypertable 6.2 GB, bars 1.2 GB.
+- ⏳ **Pending — operator/long-running:** 24h live-feed soak (`make live-feed`, or `nohup systemd-inhibit … run_live_feed.py`) to confirm no missed candles. Run when convenient; leave the machine on. Can also run later on the droplet.
 
-**DoD status:** feature-determinism ✅ done; 5y-load 🔄 in progress; 24h-soak ⏳ pending operator.
+**DoD status:** feature-determinism ✅; 5y-load ✅ (0.0000% gaps); features stored ✅ (5.26M rows); **24h-soak ⏳ pending operator — the only item left to close Phase 1.**
+
+**Phase 2 is NOT started** (operator asked to hold). Its gate = operator sign-off on freezing the §4 hard-constraint values into `constants.py`.
 
 **Claude builds:** `schema.sql` (§11) + `timescale.py` writers; `bybit_rest.py` backfill of 5 years of 1m candles for BTC/USDT + ETH/USDT; `bybit_ws.py` live trades/candles/order book; `validation.py` (gaps, late data, duplicates); deterministic feature transforms (`features/*` per §15.1 incl. cross-asset via yfinance, macro stubbed); `scripts/load_history.py`.
 
