@@ -2,7 +2,7 @@
 
 **Companion to:** [CLAUDE.md](CLAUDE.md) v1.5 (the specification — always the source of truth)
 **Created:** 2026-07-12
-**Current state:** Phase 0 — gate open, awaiting operator confirmation
+**Current state:** Phase 0 complete (local DoD met). Phase 1 — gate open.
 
 ---
 
@@ -30,8 +30,8 @@ Phases and Definitions of Done come from spec §10 and are built strictly in ord
 
 | Phase | Status | Gate confirmed | DoD met |
 |---|---|---|---|
-| 0 — Project foundation | 🔶 Gate open | — | — |
-| 1 — Data pipeline | ⬜ | — | — |
+| 0 — Project foundation | ✅ Done | 2026-07-12 | 2026-07-12 (local `make test`) |
+| 1 — Data pipeline | 🔶 Gate open | — | — |
 | 2 — Risk engine & sizing | ⬜ | — | — |
 | 3 — Backtesting engine | ⬜ | — | — |
 | 4 — Strategies & models | ⬜ | — | — |
@@ -59,20 +59,22 @@ Re-verified at each gate; this snapshot drove the Phase 0 checklist.
 
 ## Phase 0 — Project foundation (est. 1–2 days)
 
-**Status:** 🔶 Gate open
-**Gate record:** —
+**Status:** ✅ Done (2026-07-12)
+**Gate record:** Operator installed Python 3.11, PostgreSQL 16 + TimescaleDB, ta-lib, and `gh` — all verified from the machine. DoD met: fresh clone from GitHub → `make install` → `make test` = **24 passed**; `mypy --strict` and `ruff` clean; bot runs in paper mode emitting structured JSON logs. Committed and pushed to github.com/yomite/trade.
+
+> **CI note:** the workflow file (`.github/workflows/ci.yml`) is valid, but GitHub returns `startup_failure` (0 jobs, `path: BuildFailed`) because **`yomite/trade` is a private repo** and Actions won't start without available Actions minutes / billing. This is an operator-side GitHub setting. To activate CI, either (a) make the repo public — public repos get unlimited free Actions, and no secrets are committed (they live only in `.env`, gitignored); or (b) ensure the account has Actions minutes / a spending limit at github.com/settings/billing. Phase 0's DoD is the **local** `make test`, which passes, so this does not block progress.
 
 **Claude builds:** full repo tree per §9; `git init` + initial commit; `pyproject.toml` (all §6.2 deps, ruff + mypy --strict config, Python pinned 3.11); `src/constants.py` encoding every §4 HARD CONSTRAINT; `config/{base,paper,live,backtest}.yaml` per §12; `.env.example` documenting every env var; `Makefile` (install/test/lint/run-paper/backtest); pre-commit hooks; GitHub Actions CI (venv-based, no containers); `README.md`; `docs/dev-setup-ubuntu.md`.
 
 **YOU must do (Claude confirms before starting):**
-- [ ] **Install system packages** (sudo — exact commands in Appendix A; run them yourself or have Claude run them if passwordless sudo is available):
+- [x] **Install system packages** (sudo — exact commands in Appendix A; run them yourself or have Claude run them if passwordless sudo is available):
   - Python 3.11 + venv + dev headers via deadsnakes PPA (Ubuntu 24.04 ships 3.12; spec §6.4.4 pins 3.11)
   - `build-essential`, `git`, `curl`
   - PostgreSQL 16 + `postgresql-server-dev-16`, then the TimescaleDB apt repo + extension (§6.4.1)
   - ta-lib C library (required before the `TA-Lib` Python package will install)
-- [ ] **Create the dev database** (needs postgres superuser): role `tradingbot`, database `tradingbot_dev`, `CREATE EXTENSION timescaledb` — commands in Appendix A. Claude can do this part if you allow it (random dev password written straight into `.env`, never echoed).
-- [ ] **GitHub**: create an account/repo (or install `gh` and run `gh auth login` — it's interactive, only you can complete it). Needed to *activate* CI. May be deferred: the workflow file is written regardless and activates on first push.
-- [ ] **Confirm machine availability**: this workstation stays on for later soak tests (24 h in Phase 1, 7 days in Phase 5) — or tell Claude you'd rather provision the droplet early.
+- [x] **Create the dev database** (needs postgres superuser): role `tradingbot`, database `tradingbot_dev`, `CREATE EXTENSION timescaledb` — done (role verified from the machine).
+- [x] **GitHub**: repo `yomite/trade` exists, `gh` authed as `yomite`, Phase 0 pushed. CI *activation* still pending — see CI note above (private-repo Actions billing).
+- [x] **Confirm machine availability**: operator confirmed the workstation can stay on for the 24 h (Phase 1) and 7-day (Phase 5) soak tests.
 
 **Definition of Done (spec):** `make test` passes on a fresh clone after `make install` on this machine.
 
@@ -80,13 +82,13 @@ Re-verified at each gate; this snapshot drove the Phase 0 checklist.
 
 ## Phase 1 — Data pipeline (est. 3–5 days)
 
-**Status:** ⬜
+**Status:** 🔶 Gate open
 **Gate record:** —
 
 **Claude builds:** `schema.sql` (§11) + `timescale.py` writers; `bybit_rest.py` backfill of 5 years of 1m candles for BTC/USDT + ETH/USDT; `bybit_ws.py` live trades/candles/order book; `validation.py` (gaps, late data, duplicates); deterministic feature transforms (`features/*` per §15.1 incl. cross-asset via yfinance, macro stubbed); `scripts/load_history.py`.
 
 **YOU must do:**
-- [ ] **Confirm Bybit is reachable from your network/region** (websockets + REST; some regions/ISPs block Bybit — open bybit.com and its API status page once).
+- [x] **Bybit reachability confirmed** — `api.bybit.com` is DNS-blocked on this network, but Bybit's official mirror `api.bytick.com` responds (HTTP 200, valid data). The Phase 1 data layer must use the `bytick.com` REST + WS endpoints on this machine (both `ccxt` and `pybit` allow overriding the base host). No operator action needed.
 - [ ] **Start Bybit account creation + KYC now** — approval can take days and Phase 6 needs a fully verified account. Testnet API keys are enough until Phase 5.
 - [ ] **Create `.env` from `.env.example`** and fill `DATABASE_URL` yourself (secrets are yours to type; Claude never needs to see values, only that keys exist).
 - [ ] **Leave the machine running 24 h** for the live-feed DoD test.
