@@ -2,7 +2,9 @@
 # installs deps into a venv directly, matching the Ubuntu + systemd host.
 name: CI
 
-on:
+# Quote the key: bare `on:` is parsed as the YAML boolean `true`, which makes
+# GitHub fail to build the workflow (startup_failure). "on" keeps it a string.
+"on":
   push:
     branches: [main]
   pull_request:
