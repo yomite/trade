@@ -1,0 +1,12 @@
+# Live-trading overrides (Section 12.1). Real orders, real capital.
+# The bot must never be started in this mode without the Phase 6 gate satisfied.
+mode: live
+
+exchange:
+  testnet: false
+
+execution:
+  default_order_type: limit         # keep costs low; market only for stops/flatten
+
+logging:
+  level: INFO

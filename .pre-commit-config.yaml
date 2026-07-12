@@ -1,0 +1,38 @@
+# Pre-commit hooks (Phase 0 DoD): ruff, mypy --strict, pytest -m fast.
+# Install with `pre-commit install` (done by `make install`).
+#
+# mypy and pytest run through the project venv (.venv, created by `make install`)
+# so they see the installed dependencies — matching `make typecheck` / `make test`.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key           # never commit secrets (Section 21.3)
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy --strict (venv)
+        entry: .venv/bin/python -m mypy src
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: pytest-fast
+        name: pytest (fast subset, venv)
+        entry: .venv/bin/python -m pytest -m fast
+        language: system
+        pass_filenames: false
+        always_run: true

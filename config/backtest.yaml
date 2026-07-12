@@ -1,0 +1,9 @@
+# Backtesting overrides (Section 12.1). Historical replay through the same
+# risk/sizing/approval code paths as live (Section 13.1).
+mode: backtest
+
+exchange:
+  testnet: false                    # irrelevant in backtest; no network orders placed
+
+logging:
+  level: INFO

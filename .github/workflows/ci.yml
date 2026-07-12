@@ -1,0 +1,42 @@
+# CI — runs on every push and PR. No containers (Section 0.1, 6.3): the runner
+# installs deps into a venv directly, matching the Ubuntu + systemd host.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"       # Section 6.4.4: pinned for dev-prod parity
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+
+      - name: Install (core + dev)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint (ruff)
+        run: |
+          ruff check src tests scripts
+          ruff format --check src tests scripts
+
+      - name: Type check (mypy --strict)
+        run: mypy src
+
+      - name: Tests
+        run: pytest --cov --cov-report=term-missing

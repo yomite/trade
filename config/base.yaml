@@ -1,0 +1,60 @@
+# Default configuration (Section 12.2). Overridden by config/{mode}.yaml, then
+# BOT_* environment variables, then CLI args. Validated by src/common/config.py.
+#
+# NOTE: risk values here MIRROR the HARD CONSTRAINTS in src/constants.py for
+# visibility, but constants.py is authoritative — config may only be as strict
+# as, or stricter than, the constants. The risk engine enforces the constants.
+
+mode: paper                         # paper | live | backtest
+
+exchange:
+  name: bybit
+  testnet: false
+  category: spot                    # HARD CONSTRAINT (Section 16.4.4): spot only
+
+universe:
+  symbols: [BTC/USDT, ETH/USDT]
+  timeframes: [1m, 5m, 15m, 1h]
+
+risk:
+  risk_per_trade_pct: 1.0
+  max_position_pct: 25.0
+  max_concurrent: 3
+  kelly_cap: 0.25
+  daily_loss_pause_pct: 3.0
+  weekly_loss_pause_pct: 8.0
+  shutdown_drawdown_pct: 15.0
+  consec_losses_suspend: 5
+  min_confidence: 0.60
+  cost_edge_multiple: 1.2           # required edge/cost ratio (Section 18, Stage 9)
+  min_trade_notional_usd: 10.0
+
+execution:
+  default_order_type: limit
+  limit_price_offset_bps: 2.0
+  max_slippage_bps: 20.0
+  stop_registration_timeout_s: 3.0  # close defensively if SL not confirmed (16.2)
+  reconcile_interval_s: 60          # Section 16.5
+
+data:
+  warmup_seconds: 300               # no trading in first 5 min (Section 4.4)
+  stale_bar_seconds: 60             # halt if 1m bar older than this (Section 4.3)
+  max_clock_drift_seconds: 1.0      # Section 4.4
+
+models:
+  ensemble_weights: {lstm: 0.4, xgb: 0.4, rl: 0.2}
+  min_confidence: 0.60
+  retrain_schedule:
+    xgb: daily
+    lstm: weekly
+    rl: continuous
+
+monitoring:
+  telegram_chat_id: ${TELEGRAM_CHAT_ID}
+  alert_levels: [warning, error, critical]
+  dashboard_host: 127.0.0.1         # bound to Tailscale interface in production
+  dashboard_port: 8000
+
+logging:
+  level: INFO
+  format: json

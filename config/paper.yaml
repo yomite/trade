@@ -1,0 +1,8 @@
+# Paper-trading overrides (Section 12.1). Simulated fills, live market data.
+mode: paper
+
+exchange:
+  testnet: true                     # paper mode reads live data but places no real orders
+
+logging:
+  level: DEBUG                      # verbose during development
