@@ -29,6 +29,10 @@ def configure_logging(level: str = "INFO", json_format: bool = True) -> None:
     numeric_level = getattr(logging, level.upper(), logging.INFO)
     logging.basicConfig(format="%(message)s", stream=sys.stdout, level=numeric_level)
 
+    # Quiet chatty third-party request loggers (they log every HTTP call at INFO).
+    for noisy in ("httpx", "httpcore", "urllib3", "asyncio"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
     renderer: structlog.types.Processor = (
         structlog.processors.JSONRenderer() if json_format else structlog.dev.ConsoleRenderer()
     )

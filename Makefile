@@ -7,7 +7,7 @@ BIN := $(VENV)/bin
 
 .DEFAULT_GOAL := help
 .PHONY: help venv install install-all lint format typecheck test test-fast \
-        healthcheck run-paper backtest clean
+        healthcheck init-db load-history features live-feed run-paper backtest clean
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -45,6 +45,18 @@ test-fast:  ## Only fast unit tests (used by pre-commit)
 
 healthcheck:  ## Pre-trade system health validation (Section 23.1)
 	$(BIN)/python scripts/healthcheck.py
+
+init-db:  ## Apply the TimescaleDB schema (idempotent)
+	$(BIN)/python scripts/init_db.py
+
+load-history:  ## Backfill historical bars (5y of 1m by default)
+	$(BIN)/python scripts/load_history.py
+
+features:  ## Compute + store features for stored bars
+	$(BIN)/python scripts/compute_features.py
+
+live-feed:  ## Run the Bybit live websocket feed (Ctrl+C to stop)
+	$(BIN)/python scripts/run_live_feed.py
 
 run-paper:  ## Run the bot in paper-trading mode (Phase 5+)
 	$(BIN)/python -m src.main --mode paper

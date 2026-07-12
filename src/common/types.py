@@ -8,6 +8,8 @@ imported anywhere without creating cycles. Money and quantity values use
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+from datetime import datetime
 from decimal import Decimal
 from enum import IntEnum, StrEnum
 
@@ -132,3 +134,56 @@ class AlertLevel(IntEnum):
     WARNING = 20
     ERROR = 30
     CRITICAL = 40
+
+
+# --- Data-layer row models (mirror the Section 11 tables) --------------------
+# Prices/quantities are Decimal; timestamps are UTC-aware datetimes. These are
+# the in-memory representation written to / read from TimescaleDB.
+
+
+@dataclass(frozen=True, slots=True)
+class Bar:
+    """One OHLCV candle (table ``bars``)."""
+
+    symbol: Symbol
+    timeframe: str
+    ts: datetime
+    open: Decimal
+    high: Decimal
+    low: Decimal
+    close: Decimal
+    volume: Decimal
+    trades: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Trade:
+    """One tick-level trade (table ``trades_raw``)."""
+
+    symbol: Symbol
+    ts: datetime
+    price: Decimal
+    size: Decimal
+    side: Side
+    trade_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class OrderBookSnapshot:
+    """Top-N order book snapshot (table ``orderbook_snapshots``)."""
+
+    symbol: Symbol
+    ts: datetime
+    bids: list[tuple[Decimal, Decimal]]  # [(price, size), ...] best-first
+    asks: list[tuple[Decimal, Decimal]]
+
+
+@dataclass(frozen=True, slots=True)
+class FeatureRow:
+    """A computed feature vector at one timestamp (table ``features``)."""
+
+    symbol: Symbol
+    timeframe: str
+    ts: datetime
+    feature_set: str
+    values: dict[str, float] = field(default_factory=dict)

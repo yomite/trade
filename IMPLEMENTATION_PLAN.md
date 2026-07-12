@@ -82,8 +82,8 @@ Re-verified at each gate; this snapshot drove the Phase 0 checklist.
 
 ## Phase 1 — Data pipeline (est. 3–5 days)
 
-**Status:** 🔶 Gate open
-**Gate record:** —
+**Status:** 🔨 In progress (gate passed 2026-07-12)
+**Gate record:** Operator set `DATABASE_URL` in `.env`. Verified from the machine (secret never printed): connected to `tradingbot_dev` as `tradingbot`, PostgreSQL 16.14, TimescaleDB extension **2.28.2** present. Bybit reachable via `api.bytick.com` (see below). Cleared to implement.
 
 **Claude builds:** `schema.sql` (§11) + `timescale.py` writers; `bybit_rest.py` backfill of 5 years of 1m candles for BTC/USDT + ETH/USDT; `bybit_ws.py` live trades/candles/order book; `validation.py` (gaps, late data, duplicates); deterministic feature transforms (`features/*` per §15.1 incl. cross-asset via yfinance, macro stubbed); `scripts/load_history.py`.
 

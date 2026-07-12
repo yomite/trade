@@ -73,6 +73,9 @@ dev = [
 where = ["."]
 include = ["src*"]
 
+[tool.setuptools.package-data]
+"src.data.storage" = ["*.sql"]         # ship schema.sql for importlib.resources
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
@@ -105,11 +108,21 @@ show_error_codes = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
+# Feature transforms are numeric pandas/numpy code. Pandas' partially-typed API
+# fights disallow_any_generics / warn_return_any; relax only those two here.
+# Functions remain fully annotated and type-checked; full strict stays in force
+# for all risk, decision, and execution logic.
+module = ["src.data.features.*"]
+disallow_any_generics = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
 # Third-party libraries without type stubs — do not fail strict mode on them.
 module = [
     "ccxt.*", "pybit.*", "yfinance.*", "pandas_ta.*", "talib.*",
     "hmmlearn.*", "stable_baselines3.*", "sklearn.*", "skopt.*",
     "lightgbm.*", "xgboost.*", "prometheus_client.*", "boto3.*", "fredapi.*",
+    "psycopg2.*", "pandas.*", "numpy.*",
 ]
 ignore_missing_imports = true
 

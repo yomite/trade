@@ -288,5 +288,10 @@ def load_config(
     if cli_overrides:
         merged = _deep_merge(merged, cli_overrides)
 
+    # An explicit `mode` argument is the CLI layer (Section 12.1, highest
+    # precedence) and must win over a BOT_MODE env var applied above.
+    if mode is not None:
+        merged["mode"] = mode
+
     merged = _expand_env(merged)
     return Config.model_validate(merged)

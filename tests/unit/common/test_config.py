@@ -29,6 +29,16 @@ def test_mode_selects_override_file(config_dir: Path) -> None:
 
 
 @pytest.mark.fast
+def test_explicit_mode_beats_bot_mode_env(
+    config_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # CLI/explicit mode is the highest layer (Section 12.1) — it wins over BOT_MODE.
+    monkeypatch.setenv("BOT_MODE", "paper")
+    cfg = load_config(mode="live", config_dir=config_dir)
+    assert cfg.mode == Mode.LIVE
+
+
+@pytest.mark.fast
 def test_env_var_override_nested(config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # BOT_RISK__MAX_CONCURRENT tightens the limit from 3 to 2 (Section 12.1 layer 3).
     monkeypatch.setenv("BOT_RISK__MAX_CONCURRENT", "2")

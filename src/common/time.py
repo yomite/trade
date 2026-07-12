@@ -48,3 +48,21 @@ def to_ms(dt: datetime) -> int:
 def from_ms(ms: int) -> datetime:
     """Unix epoch milliseconds → timezone-aware UTC datetime."""
     return datetime.fromtimestamp(ms / 1000, tz=UTC)
+
+
+_TIMEFRAME_SECONDS: dict[str, int] = {
+    "1m": 60,
+    "5m": 300,
+    "15m": 900,
+    "1h": 3600,
+    "4h": 14400,
+    "1d": 86400,
+}
+
+
+def timeframe_seconds(timeframe: str) -> int:
+    """Width of a bar timeframe in seconds (e.g. '1m' → 60)."""
+    try:
+        return _TIMEFRAME_SECONDS[timeframe]
+    except KeyError:
+        raise ValueError(f"unknown timeframe {timeframe!r}") from None
