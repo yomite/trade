@@ -1,8 +1,9 @@
 """Bulk historical loader — backfills OHLCV bars into TimescaleDB (Section 10 Phase 1).
 
-Resumable: for each symbol/timeframe it starts from the bar after the newest one
-already stored (or `--years` back if empty), so re-running fills only what's
-missing. Idempotent writes mean an interrupted run can simply be restarted.
+Fills the missing deep-history and recent ranges (see
+``src.data.ingestion.backfill``), so an initial 5-year load runs even if a small
+recent slice already exists. Idempotent writes mean an interrupted run can simply
+be restarted.
 
 Examples:
     python scripts/load_history.py                       # 5y of 1m for the universe
@@ -18,7 +19,8 @@ from datetime import timedelta
 from src.common.config import load_config
 from src.common.env import load_env
 from src.common.logging import configure_logging, get_logger
-from src.common.time import from_ms, now, timeframe_seconds, to_ms
+from src.common.time import from_ms, now, to_ms
+from src.data.ingestion.backfill import backfill_symbol
 from src.data.ingestion.bybit_rest import BybitREST, default_history_start_ms
 from src.data.storage.timescale import Database
 from src.data.validation import expected_bar_count
@@ -34,32 +36,6 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--years", type=int, default=5, help="history depth when starting empty")
     p.add_argument("--days", type=int, default=None, help="override: only this many days back")
     return p.parse_args()
-
-
-def _load_symbol(
-    db: Database, client: BybitREST, symbol: str, timeframe: str, start_ms: int
-) -> int:
-    end_ms = to_ms(now())
-    # Resume from just after the newest stored bar, if any.
-    latest = db.latest_bar_ts(symbol, timeframe)
-    if latest is not None:
-        resume_ms = to_ms(latest) + timeframe_seconds(timeframe) * 1000
-        start_ms = max(start_ms, resume_ms)
-    if start_ms >= end_ms:
-        log.info("already_current", symbol=symbol, timeframe=timeframe)
-        return 0
-
-    written = 0
-    for batch in client.iter_klines_range(symbol, timeframe, start_ms, end_ms):
-        written += db.upsert_bars(batch)
-        log.info(
-            "batch",
-            symbol=symbol,
-            timeframe=timeframe,
-            up_to=batch[-1].ts.isoformat(),
-            written=written,
-        )
-    return written
 
 
 def _report(db: Database, symbol: str, timeframe: str) -> None:
@@ -95,6 +71,7 @@ def main() -> int:
         start_ms = to_ms(now() - timedelta(days=args.days))
     else:
         start_ms = default_history_start_ms(args.years)
+    end_ms = to_ms(now())
     log.info("start", symbols=symbols, timeframes=timeframes, since=from_ms(start_ms).isoformat())
 
     db = Database()
@@ -102,7 +79,7 @@ def main() -> int:
     with BybitREST() as client:
         for symbol in symbols:
             for timeframe in timeframes:
-                _load_symbol(db, client, symbol, timeframe, start_ms)
+                backfill_symbol(db, client, symbol, timeframe, start_ms, end_ms)
                 _report(db, symbol, timeframe)
     return 0
 
