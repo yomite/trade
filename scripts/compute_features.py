@@ -15,7 +15,7 @@ import argparse
 from src.common.config import load_config
 from src.common.env import load_env
 from src.common.logging import configure_logging, get_logger
-from src.data.features.pipeline import FEATURE_SET_VERSION, feature_rows
+from src.data.features.pipeline import FEATURE_SET_VERSION, iter_feature_rows
 from src.data.storage.timescale import Database
 
 log = get_logger("compute_features")
@@ -41,11 +41,11 @@ def main() -> int:
     db.apply_schema()
     for symbol in symbols:
         bars = db.fetch_bars(symbol, args.timeframe)
-        rows = feature_rows(symbol, args.timeframe, bars, FEATURE_SET_VERSION)
         written = 0
-        # Upsert in chunks to bound memory / statement size on long histories.
-        for i in range(0, len(rows), 5000):
-            written += db.upsert_features(rows[i : i + 5000])
+        # Stream feature rows in chunks so a full-history run never materializes
+        # millions of FeatureRow objects at once.
+        for chunk in iter_feature_rows(symbol, args.timeframe, bars, FEATURE_SET_VERSION):
+            written += db.upsert_features(chunk)
         log.info(
             "features_stored",
             symbol=symbol,
